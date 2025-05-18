@@ -178,35 +178,5 @@
     "content": "Хтось знає, чи є якісь програми підтримки для молодих підприємців, які хочуть створити технологічний стартап? Буду вдячна за інформацію.",
     "createdAt": "2025-05-15T18:05:00.000Z",
     "likes": 4
-  },
-  {
-    "id": 1747511857974,
-    "newsId": 5,
-    "author": "Test User",
-    "avatarUrl": "https://i.pravatar.cc/150?img=1",
-    "content": "Привіт!",
-    "createdAt": "2025-05-17T19:57:37.974Z",
-    "likes": 0,
-    "formattedDate": "17.05.2025"
-  },
-  {
-    "id": 1747511868785,
-    "newsId": 5,
-    "author": "Test User",
-    "avatarUrl": "https://i.pravatar.cc/150?img=1",
-    "content": "тест",
-    "createdAt": "2025-05-17T19:57:48.785Z",
-    "likes": 0,
-    "formattedDate": "17.05.2025"
-  },
-  {
-    "id": 1747511886878,
-    "newsId": 4,
-    "author": "Test User",
-    "avatarUrl": "https://i.pravatar.cc/150?img=1",
-    "content": "тест",
-    "createdAt": "2025-05-17T19:58:06.878Z",
-    "likes": 0,
-    "formattedDate": "17.05.2025"
   }
 ]

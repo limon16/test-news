@@ -118,13 +118,11 @@ export default defineNuxtPlugin((nuxtApp) => {
     }
   }
 
-  // Зупиняємо генерацію коментарів перед закриттям додатку
   nuxtApp.hook('app:beforeLeave', () => {
     logger.debug('App before leave - stopping comment generation')
     stopMockCommentGeneration()
   })
 
-  // Додаємо обробку помилок
   const handleWebSocketError = (error) => {
     websocketState.error = error.message || 'WebSocket connection error'
     websocketState.isConnected = false

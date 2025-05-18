@@ -52,6 +52,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const emit = defineEmits(['sort'])
+const { $logger } = useNuxtApp()
 const showSortOptions = ref(false)
 const sortDropdownRef = ref(null)
 
@@ -69,7 +70,7 @@ function handleSort (by, order) {
     const { $logger } = useNuxtApp()
     if ($logger) $logger.logUserAction('sort', { by, order })
   } catch (e) {
-    console.log('Sort action:', { by, order })
+    $logger.logError('Sort action:', { by, order })
   }
 }
 

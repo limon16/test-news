@@ -100,6 +100,7 @@ defineProps({
   }
 })
 
+const { $logger } = useNuxtApp()
 const newsStore = useNewsStore()
 
 function isPopularNews (news) {
@@ -121,7 +122,7 @@ function handleCategoryClick (category) {
     const { $logger } = useNuxtApp()
     if ($logger) $logger.logUserAction('filter', { type: 'category', value: category })
   } catch (e) {
-    console.log('Category filter click:', category)
+	  $logger.logError('Category filter click:', { category })
   }
 }
 
@@ -132,7 +133,7 @@ function handleTagClick (tag) {
     const { $logger } = useNuxtApp()
     if ($logger) $logger.logUserAction('filter', { type: 'tag', value: tag })
   } catch (e) {
-    console.log('Tag filter click:', tag)
+	  $logger.logError('Tag filter click:', tag)
   }
 }
 </script>

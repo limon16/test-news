@@ -9,7 +9,6 @@ export const useNewsStore = defineStore('news', () => {
   const error = ref(null)
   const { $logger } = useNuxtApp()
 
-  // Фільтри та сортування
   const searchQuery = ref('')
   const selectedCategory = ref('')
   const selectedTag = ref('')
@@ -18,11 +17,9 @@ export const useNewsStore = defineStore('news', () => {
   const currentPage = ref(1)
   const itemsPerPage = ref(10)
 
-  // Обчислювані властивості для фільтрації та сортування
   const filteredNews = computed(() => {
     let filtered = [...allNewsList.value]
 
-    // Фільтрація за пошуковим запитом
     if (searchQuery.value.trim()) {
       const query = searchQuery.value.toLowerCase()
       filtered = filtered.filter(item =>
@@ -36,7 +33,6 @@ export const useNewsStore = defineStore('news', () => {
       })
     }
 
-    // Фільтрація за категорією
     if (selectedCategory.value) {
       filtered = filtered.filter(item => item.category === selectedCategory.value)
       $logger.debug('Filtering by category', {
@@ -45,7 +41,6 @@ export const useNewsStore = defineStore('news', () => {
       })
     }
 
-    // Фільтрація за тегом
     if (selectedTag.value) {
       filtered = filtered.filter(item =>
         item.tags && Array.isArray(item.tags) && item.tags.includes(selectedTag.value)
@@ -125,7 +120,6 @@ export const useNewsStore = defineStore('news', () => {
     Math.ceil(total.value / itemsPerPage.value)
   )
 
-  // Отримання унікальних категорій
   const categories = computed(() => {
     const set = new Set()
     allNewsList.value.forEach(item => {
@@ -134,7 +128,6 @@ export const useNewsStore = defineStore('news', () => {
     return Array.from(set).sort()
   })
 
-  // Отримання унікальних тегів
   const tags = computed(() => {
     const set = new Set()
     allNewsList.value.forEach(item => {
@@ -151,14 +144,12 @@ export const useNewsStore = defineStore('news', () => {
     selectedTag.value !== ''
   )
 
-  // Попурярні новини - топ 5 за переглядами
   const popularNews = computed(() =>
     [...allNewsList.value]
       .sort((a, b) => (b.views || 0) - (a.views || 0))
       .slice(0, 5)
   )
 
-  // Вибрані новини
   const featuredNews = computed(() =>
     allNewsList.value.filter(item => item.featured).slice(0, 3)
   )
@@ -167,7 +158,6 @@ export const useNewsStore = defineStore('news', () => {
    * Завантаження всіх новин
    */
   async function fetchAllNews (forceRefresh = false) {
-    // Якщо вже завантажуємо або є дані і не потрібно оновлювати
     if (loading.value || (allNewsList.value.length > 0 && !forceRefresh)) {
       $logger.debug('Skipping fetchAllNews', {
         isLoading: loading.value,
@@ -183,7 +173,6 @@ export const useNewsStore = defineStore('news', () => {
     $logger.info('Fetching all news')
 
     try {
-      // Використовуємо оригінальний useFetch для стабільності
       const { data, pending, error: fetchError } = await useFetch('/api/news')
 
       loading.value = pending.value
@@ -233,7 +222,6 @@ export const useNewsStore = defineStore('news', () => {
     $logger.debug('Fetching news item', { idOrSlug })
 
     try {
-      // Спочатку перевіряємо кеш
       if (allNewsList.value.length > 0) {
         const cachedItem = allNewsList.value.find(
           n => n.slug === idOrSlug || String(n.id) === String(idOrSlug)
@@ -249,7 +237,6 @@ export const useNewsStore = defineStore('news', () => {
         }
       }
 
-      // Якщо немає в кеші - завантажуємо за допомогою useFetch
       const { data, error: fetchError } = await useFetch(`/api/news/${idOrSlug}`)
 
       if (fetchError.value) {
@@ -268,7 +255,6 @@ export const useNewsStore = defineStore('news', () => {
         return null
       }
 
-      // Оновлюємо кеш
       const existingIndex = allNewsList.value.findIndex(
         item => item.id === data.value.id || item.slug === data.value.slug
       )
@@ -322,7 +308,7 @@ export const useNewsStore = defineStore('news', () => {
       newCategory: category
     })
     selectedCategory.value = category
-    selectedTag.value = '' // Скидаємо тег при встановленні категорії
+    selectedTag.value = ''
     currentPage.value = 1
   }
 
@@ -335,7 +321,7 @@ export const useNewsStore = defineStore('news', () => {
       newTag: tag
     })
     selectedTag.value = tag
-    selectedCategory.value = '' // Скидаємо категорію при встановленні тегу
+    selectedCategory.value = ''
     currentPage.value = 1
   }
 

@@ -1,18 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref, computed, onMounted } from 'vue'
+import { useNuxtApp } from '#app'
 
 export const useCommentsStore = defineStore('comments', () => {
+  const nuxtApp = useNuxtApp()
+  const { $logger } = nuxtApp
+
   const comments = ref([])
   const loading = ref(false)
   const error = ref(null)
   const currentNewsId = ref(null)
 
-  // Ініціалізація: завантаження коментарів з localStorage
   onMounted(() => {
     loadCommentsFromLocalStorage()
   })
 
-  // Функція для завантаження коментарів з localStorage
   function loadCommentsFromLocalStorage () {
     if (import.meta.client) {
       try {
@@ -20,28 +22,26 @@ export const useCommentsStore = defineStore('comments', () => {
         if (savedComments) {
           const localComments = JSON.parse(savedComments)
 
-          // Перевіряємо, щоб не додавати дублікати
           const existingIds = comments.value.map(c => c.id)
           const newComments = localComments.filter(c => !existingIds.includes(c.id))
 
           if (newComments.length > 0) {
             comments.value.push(...newComments)
-            console.log(`[CommentsStore] Завантажено ${newComments.length} коментарів з localStorage`)
+            $logger.debug(`Завантажено ${newComments.length} коментарів з localStorage`)
           }
         }
       } catch (err) {
-        console.error('[CommentsStore] Помилка завантаження коментарів з localStorage:', err)
+        $logger.logError(err, { context: 'завантаження коментарів з localStorage' })
       }
     }
   }
 
-  // Функція для збереження коментарів у localStorage
   function saveCommentsToLocalStorage () {
     if (import.meta.client) {
       try {
         localStorage.setItem('nuxt-news-comments', JSON.stringify(comments.value))
       } catch (err) {
-        console.error('[CommentsStore] Помилка збереження коментарів у localStorage:', err)
+        $logger.logError(err, { context: 'збереження коментарів у localStorage' })
       }
     }
   }
@@ -63,23 +63,21 @@ export const useCommentsStore = defineStore('comments', () => {
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   })
 
-  function setCurrentNewsId (newsId) {
-    currentNewsId.value = parseInt(newsId)
-  }
-
   async function fetchCommentsByNewsId (newsId) {
     loading.value = true
     error.value = null
     const parsedNewsId = parseInt(newsId)
 
     try {
-      // Спочатку завантажуємо коментарі з localStorage, якщо їх ще немає
       loadCommentsFromLocalStorage()
 
-      // Спроба отримати коментарі з API
+      $logger.debug(`Починаємо завантаження коментарів для новини ID: ${parsedNewsId}`)
+      const startTime = performance.now()
+
       const response = await $fetch(`/api/comments/${parsedNewsId}`)
 
-      // Видаляємо старі коментарі для цієї новини з API (але зберігаємо локальні)
+      $logger.logPerformance(`Отримання коментарів для новини ID: ${parsedNewsId}`, startTime)
+
       const localComments = comments.value.filter(c =>
         c.newsId === parsedNewsId && c.isLocalComment === true
       )
@@ -88,22 +86,19 @@ export const useCommentsStore = defineStore('comments', () => {
         c.newsId !== parsedNewsId || c.isLocalComment === true
       )
 
-      // Додаємо нові коментарі з API
       if (Array.isArray(response)) {
         comments.value.push(...response)
       }
 
-      console.log(`[CommentsStore] Завантажено ${Array.isArray(response) ? response.length : 0} коментарів для новини ID:${parsedNewsId} з API та ${localComments.length} локальних коментарів`)
+      $logger.info(`Завантажено ${Array.isArray(response) ? response.length : 0} коментарів, для новини ID: ${parsedNewsId} з API та ${localComments.length} локальних коментарів`)
 
-      // Зберігаємо оновлені коментарі в localStorage
       saveCommentsToLocalStorage()
 
       return getCommentsByNewsId.value(parsedNewsId)
     } catch (err) {
-      console.error(`[CommentsStore] Помилка завантаження коментарів для новини ID:${parsedNewsId}:`, err)
+      $logger.logError(err, { context: `завантаження коментарів для новини ID: ${parsedNewsId}` })
       error.value = typeof err === 'string' ? err : err.message || 'Помилка завантаження коментарів'
 
-      // Якщо запит не вдався, повертаємо локальні коментарі, якщо вони є
       return getCommentsByNewsId.value(parsedNewsId)
     } finally {
       loading.value = false
@@ -117,9 +112,8 @@ export const useCommentsStore = defineStore('comments', () => {
     }
 
     comments.value.push(comment)
-    console.log(`[CommentsStore] Додано новий коментар ID:${comment.id} для новини ID:${comment.newsId}`)
+    $logger.debug(`Додано новий коментар ID: ${comment.id} для новини ID: ${comment.newsId}`, { comment })
 
-    // Зберігаємо коментарі в localStorage після додавання нового
     saveCommentsToLocalStorage()
   }
 
@@ -127,7 +121,13 @@ export const useCommentsStore = defineStore('comments', () => {
     try {
       loading.value = true
       error.value = null
-      // Спроба відправити коментар на сервер
+      const startTime = performance.now()
+
+      $logger.logUserAction('Відправка коментаря', {
+        newsId,
+        contentLength: commentData.content.length
+      })
+
       // const response = await $fetch('/api/comments/add', {
       //   method: 'POST',
       //   body: {
@@ -142,7 +142,6 @@ export const useCommentsStore = defineStore('comments', () => {
       //   throw new Error(response.message || 'Помилка при додаванні коментаря')
       // }
 
-      //
       // addComment({
       //   ...response,
       //   isUserComment: true
@@ -162,12 +161,13 @@ export const useCommentsStore = defineStore('comments', () => {
       }
 
       addComment(localComment)
-      console.log(`[CommentsStore] Створено локальний коментар для новини ID:${newsId}`, localComment)
+      $logger.info(`Створено локальний коментар для новини ID: ${newsId}`, { commentId: localComment.id })
+      $logger.logPerformance(`Створення коментаря для новини ID: ${newsId}`, startTime)
 
       return localComment
 
     } catch (err) {
-      console.error(`[CommentsStore] Помилка відправки коментаря для новини ID:${newsId}:`, err)
+      $logger.logError(err, { context: `відправка коментаря для новини ID: ${newsId}` })
       error.value = typeof err === 'string' ? err : err.message || 'Помилка відправки коментаря'
       throw err
     } finally {
@@ -177,7 +177,7 @@ export const useCommentsStore = defineStore('comments', () => {
 
   function handleNewComment (comment) {
     if (!comment || !comment.id || !comment.newsId) {
-      console.warn('[CommentsStore] Отримано неправильний формат коментаря:', comment)
+      $logger.warn('Отримано неправильний формат коментаря', { comment })
       return
     }
 
@@ -189,7 +189,6 @@ export const useCommentsStore = defineStore('comments', () => {
     addComment(realtimeComment)
   }
 
-  // Допоміжна функція для форматування дати
   function formatDate (date) {
     try {
       const d = new Date(date)
@@ -198,6 +197,7 @@ export const useCommentsStore = defineStore('comments', () => {
       const year = d.getFullYear()
       return `${day}.${month}.${year}`
     } catch (e) {
+      $logger.warn('Помилка форматування дати', { date, error: e })
       return ''
     }
   }
@@ -210,7 +210,6 @@ export const useCommentsStore = defineStore('comments', () => {
     getCommentsByNewsId,
     getCommentsCount,
     getCurrentNewsComments,
-    setCurrentNewsId,
     fetchCommentsByNewsId,
     addComment,
     postComment,

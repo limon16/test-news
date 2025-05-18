@@ -144,7 +144,9 @@ const { $websocket } = useNuxtApp()
 
 const loading = ref(false)
 const error = ref(null)
-const comments = ref([])
+const comments = computed(() => {
+  return commentsStore.getCommentsByNewsId(parseInt(props.newsId))
+})
 
 const newCommentForm = reactive({
   content: '',
@@ -160,7 +162,6 @@ const loadComments = async () => {
   try {
     const newsId = parseInt(props.newsId)
     await commentsStore.fetchCommentsByNewsId(newsId)
-    comments.value = commentsStore.getCommentsByNewsId(newsId)
     $logger.info(`Successfully loaded ${comments.value.length} comments for news ID: ${props.newsId}`)
   } catch (err) {
     $logger.logError(err, { context: `loading comments for news ID: ${props.newsId}` })
@@ -218,7 +219,6 @@ const submitComment = async () => {
       content: newCommentForm.content
     })
 
-    comments.value = commentsStore.getCommentsByNewsId(props.newsId)
     newCommentForm.content = ''
   } catch (err) {
     $logger.logError(err, { context: `submitting comment for news ID: ${props.newsId}` })
@@ -233,7 +233,10 @@ const unsubscribeWs = ref(null)
 
 const onNewComment = (newComment) => {
   if (parseInt(newComment.newsId) === parseInt(props.newsId)) {
-    comments.value = commentsStore.getCommentsByNewsId(props.newsId)
+    $logger.debug(`Отримано новий коментар для поточної новини ID: ${props.newsId}`, {
+      commentId: newComment.id,
+      author: newComment.author
+    })
   }
 }
 
